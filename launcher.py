@@ -45,9 +45,13 @@ class ModLauncher:
         src_path = os.path.join(self.mods_path, selected_mod)
         dest_path = os.path.join(CIV_V_DLC_PATH, selected_mod)
 
-        # Move the mod folder
-        if os.path.exists(dest_path):
-            shutil.rmtree(dest_path)
+        # Remove all existing mods from the DLC folder
+        for item in os.listdir(CIV_V_DLC_PATH):
+            item_path = os.path.join(CIV_V_DLC_PATH, item)
+            if os.path.isdir(item_path):
+                shutil.rmtree(item_path)
+
+        # Move the selected mod folder
         shutil.copytree(src_path, dest_path)
 
         # Launch the game
