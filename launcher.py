@@ -1,11 +1,12 @@
 import os
 import shutil
 import subprocess
+import json
 from tkinter import Tk, filedialog, Button, Listbox, END
 
-# Constants
 CIV_V_DLC_PATH = r"E:\SteamLibrary\steamapps\common\Sid Meier's Civilization V\Assets\DLC"
 CIV_V_EXE_PATH = r"E:\SteamLibrary\steamapps\common\Sid Meier's Civilization V\CivilizationV.exe"
+INSTALLED_MODS_FILE = "installed_mods.json"
 
 class ModLauncher:
     def __init__(self, master):
@@ -14,6 +15,7 @@ class ModLauncher:
 
         self.mods_path = ""
         self.mods = []
+        self.installed_mods = self.load_installed_mods()
 
         # Create and pack widgets
         self.select_folder_button = Button(master, text="Select Mods Folder", command=self.select_mods_folder)
@@ -35,6 +37,16 @@ class ModLauncher:
         for mod in self.mods:
             self.mod_listbox.insert(END, mod)
 
+    def load_installed_mods(self):
+        if os.path.exists(INSTALLED_MODS_FILE):
+            with open(INSTALLED_MODS_FILE, 'r') as f:
+                return json.load(f)
+        return []
+
+    def save_installed_mods(self):
+        with open(INSTALLED_MODS_FILE, 'w') as f:
+            json.dump(self.installed_mods, f)
+
     def launch_game(self):
         selected_indices = self.mod_listbox.curselection()
         if not selected_indices:
@@ -45,14 +57,18 @@ class ModLauncher:
         src_path = os.path.join(self.mods_path, selected_mod)
         dest_path = os.path.join(CIV_V_DLC_PATH, selected_mod)
 
-        # Remove all existing mods from the DLC folder
-        for item in os.listdir(CIV_V_DLC_PATH):
-            item_path = os.path.join(CIV_V_DLC_PATH, item)
-            if os.path.isdir(item_path):
-                shutil.rmtree(item_path)
+        # Remove previously installed mods
+        for mod in self.installed_mods:
+            mod_path = os.path.join(CIV_V_DLC_PATH, mod)
+            if os.path.exists(mod_path):
+                shutil.rmtree(mod_path)
 
-        # Move the selected mod folder
+        # Install the selected mod
         shutil.copytree(src_path, dest_path)
+
+        # Update the list of installed mods
+        self.installed_mods = [selected_mod]
+        self.save_installed_mods()
 
         # Launch the game
         subprocess.Popen(CIV_V_EXE_PATH)
